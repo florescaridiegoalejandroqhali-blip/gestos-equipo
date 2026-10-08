@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✋ Gestos en Equipo - 5 Personas</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+  body {
+    background: #0a0a0a;
+    color: #fff;
+    padding: 15px;
+    min-height: 100vh;
+  }
+
+  /* ====== PANTALLA DE ENTRADA ====== */
+  #entrada {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  #entrada h1 {
+    font-size: 36px;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, #00c853, #00e676);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+  }
+  #entrada .sub {
+    color: #888;
+    margin-bottom: 40px;
+    text-align: center;
+    font-size: 15px;
+  }
+  #entrada .form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 350px;
+  }
+  #entrada input {
+    padding: 15px 20px;
+    font-size: 16px;
+    width: 100%;
+    background: #1a1a1a;
+    border: 2px solid #333;
+    border-radius: 10px;
+    color: #fff;
+    text-align: center;
+    transition: 0.2s;
+  }
+  #entrada input:focus {
+    outline: none;
+    border-color: #00c853;
+    box-shadow: 0 0 15px rgba(0,200,83,0.3);
+  }
+  #entrada input::placeholder { color: #555; }
+  #entrada button {
+    padding: 16px 40px;
+    font-size: 17px;
+    background: linear-gradient(135deg, #00c853, #00e676);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+    margin-top: 10px;
+  }
+  #entrada button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,200,83,0.4);
+  }
+  #entrada button:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  #entrada .info {
+    margin-top: 30px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    max-width: 400px;
+    line-height: 1.8;
+  }
+  #entrada .info b { color: #00c853; }
+
+  /* ====== APP PRINCIPAL ====== */
+  #app { display: none; }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto 15px;
+    padding: 12px 20px;
+    background: #1a1a1a;
+    border-radius: 12px;
+    border: 1px solid #333;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .header h1 { font-size: 18px; }
+  .header .info-bar {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .header .info-bar span { display: flex; align-items: center; gap: 6px; }
+  .header .info-bar b { color: #00e676; }
+  .header button {
+    padding: 8px 16px;
+    background: #d50000;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    transition: 0.2s;
+  }
+  .header button:hover { background: #b71c1c; }
+
+  #estadoConexion {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    font-size: 13px;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #333;
+    transition: 0.2s;
+  }
+  #estadoConexion.conectado {
+    background: rgba(0,200,83,0.15);
+    color: #00e676;
+    border-color: #00c853;
+  }
+  #estadoConexion.error {
+    background: rgba(213,0,0,0.2);
+    color: #ff5252;
+    border-color: #d50000;
+  }
+
+  /* ====== GRID DE VIDEOS ====== */
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .video-card {
+    position: relative;
+    background: #1a1a1a;
+    border: 3px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    transition: all 0.3s;
+  }
+  .video-card.local { border-color: #00c853; }
+  .video-card.activo {
+    border-color: #ffea00;
+    box-shadow: 0 0 25px rgba(255,234,0,0.5);
+  }
+
+  .video-card video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    background: #000;
+  }
+  .video-card .canvas-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .video-card .nombre {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.8);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: bold;
+    backdrop-filter: blur(10px);
+  }
+  .video-card.local .nombre { background: rgba(0,200,83,0.9); color: #000; }
+
+  .video-card .gesto-badge {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #00c853, #00e676);
+    color: #000;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
+    font-size: 20px;
+    display: none;
+    animation: aparecer 0.3s;
+    box-shadow: 0 5px 20px rgba(0,200,83,0.5);
+  }
+  .video-card .gesto-badge.visible { display: block; }
+  @keyframes aparecer {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .video-card .sin-camara {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: #1a1a1a;
+    color: #555;
+    font-size: 14px;
+    gap: 10px;
+  }
+  .video-card .sin-camara .icono { font-size: 40px; }
+
+  /* ====== LOG ====== */
+  #log {
+    max-width: 1400px;
+    margin: 15px auto 0;
+    background: #111;
+    padding: 12px;
+    border-radius: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    max-height: 100px;
+    overflow-y: auto;
+    border: 1px solid #333;
+    color: #aaa;
+  }
+  #log div { padding: 2px 0; }
+  #log .ok { color: #00e676; }
+  #log .err { color: #ff5252; }
+  #log .warn { color: #ffc107; }
+
+  /* ====== INSTRUCCIONES ====== */
+  #instrucciones {
+    max-width: 1400px;
+    margin: 15px auto 0;
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    font-size: 13px;
+    color: #aaa;
+    line-height: 1.8;
+  }
+  #instrucciones h3 {
+    font-size: 14px;
+    color: #00e676;
+    margin-bottom: 8px;
+  }
+  #instrucciones .gestos-lista {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  #instrucciones .gesto-item {
+    background: #0a0a0a;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #instrucciones .gesto-item .emoji { font-size: 22px; }
+
+  /* ====== CARGA ====== */
+  #carga {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.96);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 200;
+    font-size: 16px;
+  }
+  #carga.visible { display: flex; }
+  .spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #333;
+    border-top-color: #00c853;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin-bottom: 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #cargaTexto { color: #aaa; font-size: 14px; }
+
+  /* ====== RESPONSIVE ====== */
+  @media (max-width: 600px) {
+    .header { flex-direction: column; align-items: flex-start; }
+    .header h1 { font-size: 16px; }
+    #grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ PANTALLA DE ENTRADA ============ -->
+<div id="entrada">
+  <h1>✋ Gestos en Equipo</h1>
+  <div class="sub">Conéctate con hasta 5 personas y haz gestos con la mano</div>
+
+  <div class="form">
+    <input type="text" id="nombreInput" placeholder="Tu nombre" maxlength="20" autocomplete="off">
+    <input type="text" id="salaInput" placeholder="Nombre de la sala" value="equipo-5" maxlength="20" autocomplete="off">
+    <button id="btnEntrar">🚀 Entrar a la sala</button>
+  </div>
+
+  <div class="info">
+    📌 Todos deben usar <b>el mismo nombre de sala</b> para verse<br>
+    👥 Máximo 5 personas por sala<br>
+    📷 Se pedirá permiso para la cámara<br>
+    🖐️ Haz gestos con los dedos: <b>1, 2, 3, 4, 5</b>
+  </div>
+</div>
+
+<!-- ============ CARGA ============ -->
+<div id="carga">
+  <div class="spinner"></div>
+  <div id="cargaTexto">Cargando...</div>
+</div>
+
+<!-- ============ APP PRINCIPAL ============ -->
+<div id="app">
+  <div class="header">
+    <h1>✋ Gestos en Equipo</h1>
+    <div class="info-bar">
+      <span>👥 Personas: <b id="contador">1</b> / 5</span>
+      <span>🏠 Sala: <b id="nombreSala">-</b></span>
+      <button id="btnSalir">Salir</button>
+    </div>
+  </div>
+
+  <div id="estadoConexion">🔌 Conectando al servidor...</div>
+
+  <div id="grid"></div>
+
+  <div id="instrucciones">
+    <h3>🎯 Gestos disponibles</h3>
+    <div class="gestos-lista">
+      <div class="gesto-item"><span class="emoji">☝️</span> 1 = Índice</div>
+      <div class="gesto-item"><span class="emoji">✌️</span> 2 = Paz</div>
+      <div class="gesto-item"><span class="emoji">🤟</span> 3 = Tres dedos</div>
+      <div class="gesto-item"><span class="emoji">🖖</span> 4 = Cuatro dedos</div>
+      <div class="gesto-item"><span class="emoji">🖐️</span> 5 = Mano abierta</div>
+    </div>
+  </div>
+
+  <div id="log"></div>
+</div>
+
+<!-- ============ LIBRERÍAS ============ -->
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+<script>
+// ==========================================
+// VARIABLES GLOBALES
+// ==========================================
+let socket = null;
+let miNombre = '';
+let miSala = '';
+let miId = null;
+let miStream = null;
+let hands = null;
+let handsListo = false;
+
+let miCanvas = null;
+let miCtx = null;
+
+let historialGesto = [];
+let ultimoGestoEnviado = null;
+let ultimoTiempoEnvio = 0;
+
+// ==========================================
+// LOG
+// ==========================================
+function log(msg, tipo = '') {
+  const hora = new Date().toLocaleTimeString();
+  const logDiv = document.getElementById('log');
+  const p = document.createElement('div');
+  p.className = tipo;
+  p.textContent = `[${hora}] ${msg}`;
+  logDiv.prepend(p);
+  if (logDiv.children.length > 30) logDiv.removeChild(logDiv.lastChild);
+  console.log(msg);
+}
+
+// ==========================================
+// GESTOS DISPONIBLES
+// ==========================================
+const GESTOS = {
+  '1': { emoji: '☝️', nombre: 'UNO' },
+  '2': { emoji: '✌️', nombre: 'DOS' },
+  '3': { emoji: '🤟', nombre: 'TRES' },
+  '4': { emoji: '🖖', nombre: 'CUATRO' },
+  '5': { emoji: '🖐️', nombre: 'CINCO' },
+};
+
+// ==========================================
+// PUNTOS CLAVE
+// ==========================================
+const P = {
+  pulgarPunta: 4, pulgarIP: 3,
+  indicePunta: 8, indicePIP: 6, indiceMCP: 5,
+  medioPunta: 12, medioPIP: 10, medioMCP: 9,
+  anularPunta: 16, anularPIP: 14, anularMCP: 13,
+  meniquePunta: 20, meniquePIP: 18, meniqueMCP: 17,
+};
+
+// ==========================================
+// DETECCIÓN DE DEDOS
+// ==========================================
+function dedoExtendido(lm, punta, pip) {
+  const muneca = lm[0];
+  const dPunta = Math.hypot(lm[punta].x - muneca.x, lm[punta].y - muneca.y);
+  const dPip = Math.hypot(lm[pip].x - muneca.x, lm[pip].y - muneca.y);
+  return dPunta > dPip * 1.1;
+}
+
+function pulgarExtendido(lm) {
+  const muneca = lm[0];
+  const pulgarPunta = lm[P.pulgarPunta];
+  const indiceMCP = lm[P.indiceMCP];
+  const distPulgarIndice = Math.hypot(pulgarPunta.x - indiceMCP.x, pulgarPunta.y - indiceMCP.y);
+  const distPulgarMuneca = Math.hypot(pulgarPunta.x - muneca.x, pulgarPunta.y - muneca.y);
+  return distPulgarIndice > 0.1 && distPulgarMuneca > 0.15;
+}
+
+// ==========================================
+// DETECTAR NÚMERO (1-5)
+// ==========================================
+function detectarNumero(lm) {
+  const dedos = {
+    pulgar: pulgarExtendido(lm),
+    indice: dedoExtendido(lm, P.indicePunta, P.indicePIP),
+    medio: dedoExtendido(lm, P.medioPunta, P.medioPIP),
+    anular: dedoExtendido(lm, P.anularPunta, P.anularPIP),
+    menique: dedoExtendido(lm, P.meniquePunta, P.meniquePIP),
+  };
+
+  const total = Object.values(dedos).filter(v => v).length;
+
+  if (total === 1 && dedos.indice) return '1';
+  if (total === 2 && dedos.indice && dedos.medio) return '2';
+  if (total === 3 && dedos.indice && dedos.medio && dedos.anular) return '3';
+  if (total === 4 && dedos.indice && dedos.medio && dedos.anular && dedos.menique && !dedos.pulgar) return '4';
+  if (total === 5) return '5';
+
+  return null;
+}
+
+// ==========================================
+// ESTABILIZAR GESTO
+// ==========================================
+function estabilizarGesto(nuevoGesto) {
+  historialGesto.push(nuevoGesto);
+  if (historialGesto.length > 8) historialGesto.shift();
+
+  const conteo = {};
+  historialGesto.forEach(g => {
+    if (g) conteo[g] = (conteo[g] || 0) + 1;
+  });
+
+  let masRepetido = null;
+  let maxConteo = 0;
+  for (const [id, count] of Object.entries(conteo)) {
+    if (count > maxConteo) {
+      maxConteo = count;
+      masRepetido = id;
+    }
+  }
+
+  if (maxConteo >= 5) return masRepetido;
+  return null;
+}
+
+// ==========================================
+// PROCESAR RESULTADOS
+// ==========================================
+function onResults(results) {
+  if (!miCtx) return;
+
+  miCtx.clearRect(0, 0, miCanvas.width, miCanvas.height);
+
+  const manos = results.multiHandLandmarks || [];
+
+  if (manos.length === 0) {
+    historialGesto = [];
+    actualizarBadgeGesto(null);
+    const card = document.getElementById('card-' + miId);
+    if (card) card.classList.remove('activo');
+    return;
+  }
+
+  const lm = manos[0];
+
+  const gestoDetectado = detectarNumero(lm);
+  const gestoEstable = estabilizarGesto(gestoDetectado);
+
+  dibujarMano(lm);
+  actualizarBadgeGesto(gestoEstable);
+
+  const card = document.getElementById('card-' + miId);
+  if (card) card.classList.toggle('activo', !!gestoEstable);
+
+  // Enviar por socket si cambia y cada 500ms
+  if (gestoEstable && gestoEstable !== ultimoGestoEnviado) {
+    const ahora = Date.now();
+    if (ahora - ultimoTiempoEnvio > 500) {
+      ultimoGestoEnviado = gestoEstable;
+      ultimoTiempoEnvio = ahora;
+
+      if (socket && socket.connected) {
+        socket.emit('gesto', { gesto: gestoEstable });
+        log(`📤 Enviado: gesto ${gestoEstable}`, 'ok');
+      }
+    }
+  }
+}
+
+// ==========================================
+// DIBUJAR MANO
+// ==========================================
+const CONEXIONES = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],
+  [0,17]
+];
+
+function dibujarMano(lm) {
+  const color = '#00e676';
+  miCtx.strokeStyle = color;
+  miCtx.lineWidth = 3;
+
+  CONEXIONES.forEach(([a, b]) => {
+    const xA = miCanvas.width - lm[a].x * miCanvas.width;
+    const yA = lm[a].y * miCanvas.height;
+    const xB = miCanvas.width - lm[b].x * miCanvas.width;
+    const yB = lm[b].y * miCanvas.height;
+    miCtx.beginPath();
+    miCtx.moveTo(xA, yA);
+    miCtx.lineTo(xB, yB);
+    miCtx.stroke();
+  });
+
+  lm.forEach((p, i) => {
+    const x = miCanvas.width - p.x * miCanvas.width;
+    const y = p.y * miCanvas.height;
+    const esPunta = [4, 8, 12, 16, 20].includes(i);
+    miCtx.beginPath();
+    miCtx.arc(x, y, esPunta ? 5 : 3, 0, Math.PI * 2);
+    miCtx.fillStyle = esPunta ? '#ffea00' : color;
+    miCtx.fill();
+  });
+}
+
+// ==========================================
+// ACTUALIZAR BADGE
+// ==========================================
+function actualizarBadgeGesto(gestoId) {
+  const badge = document.getElementById('badge-' + miId);
+  if (!badge) return;
+
+  if (gestoId && GESTOS[gestoId]) {
+    const g = GESTOS[gestoId];
+    badge.textContent = `${g.emoji} ${g.nombre}`;
+    badge.classList.add('visible');
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+
+// ==========================================
+// CREAR CARD DE VIDEO
+// ==========================================
+function crearVideoCard(id, nombre, esLocal) {
+  if (document.getElementById('card-' + id)) return null;
+
+  const card = document.createElement('div');
+  card.className = 'video-card' + (esLocal ? ' local' : '');
+  card.id = 'card-' + id;
+
+  const video = document.createElement('video');
+  video.autoplay = true;
+  video.playsInline = true;
+  video.muted = esLocal;
+  video.id = 'video-' + id;
+
+  const nombreDiv = document.createElement('div');
+  nombreDiv.className = 'nombre';
+  nombreDiv.textContent = nombre + (esLocal ? ' (tú)' : '');
+
+  const badge = document.createElement('div');
+  badge.className = 'gesto-badge';
+  badge.id = 'badge-' + id;
+
+  card.appendChild(video);
+  card.appendChild(nombreDiv);
+  card.appendChild(badge);
+
+  if (esLocal) {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'canvas-overlay';
+    canvas.width = 640;
+    canvas.height = 480;
+    canvas.id = 'canvas-' + id;
+    card.appendChild(canvas);
+
+    miCanvas = canvas;
+    miCtx = canvas.getContext('2d');
+  }
+
+  document.getElementById('grid').appendChild(card);
+  return video;
+}
+
+// ==========================================
+// INICIAR CÁMARA
+// ==========================================
+async function iniciarCamara() {
+  try {
+    miStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        facingMode: 'user'
+      },
+      audio: false
+    });
+
+    const videoLocal = crearVideoCard(miId, miNombre, true);
+    if (videoLocal) {
+      videoLocal.srcObject = miStream;
+      await videoLocal.play();
+    }
+
+    log('📷 Cámara activada', 'ok');
+    return true;
+  } catch (err) {
+    log('❌ Error cámara: ' + err.message, 'err');
+    alert('No se pudo acceder a la cámara: ' + err.message);
+    return false;
+  }
+}
+
+// ==========================================
+// INICIAR MEDIAPIPE
+// ==========================================
+async function iniciarMediaPipe() {
+  try {
+    hands = new Hands({
+      locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+    });
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 0,
+      minDetectionConfidence: 0.6,
+      minTrackingConfidence: 0.6,
+    });
+
+    hands.onResults(onResults);
+
+    await hands.initialize();
+    handsListo = true;
+    log('✅ MediaPipe listo', 'ok');
+    return true;
+  } catch (err) {
+    log('❌ Error MediaPipe: ' + err.message, 'err');
+    return false;
+  }
+}
+
+// ==========================================
+// LOOP DE FRAMES
+// ==========================================
+let enviando = false;
+
+async function loopFrame() {
+  if (handsListo && !enviando && miStream) {
+    const videoEl = document.getElementById('video-' + miId);
+    if (videoEl && videoEl.readyState >= 2) {
+      enviando = true;
+      try {
+        await hands.send({ image: videoEl });
+      } catch (e) {}
+      enviando = false;
+    }
+  }
+  requestAnimationFrame(loopFrame);
+}
+
+// ==========================================
+// ENTRAR
+// ==========================================
+async function entrar() {
+  miNombre = document.getElementById('nombreInput').value.trim();
+  miSala = document.getElementById('salaInput').value.trim() || 'equipo-5';
+
+  if (!miNombre) {
+    alert('Por favor escribe tu nombre');
+    document.getElementById('nombreInput').focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnEntrar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Cargando...';
+
+  document.getElementById('carga').classList.add('visible');
+  document.getElementById('cargaTexto').textContent = 'Cargando detector de gestos...';
+
+  document.getElementById('entrada').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('nombreSala').textContent = miSala;
+
+  log(`🚀 Entrando como "${miNombre}" a sala "${miSala}"`);
+
+  // 1. MediaPipe
+  const mpOK = await iniciarMediaPipe();
+  if (!mpOK) {
+    document.getElementById('carga').classList.remove('visible');
+    alert('Error al cargar el detector de gestos');
+    return;
+  }
+
+  document.getElementById('cargaTexto').textContent = 'Conectando al servidor...';
+
+  // 2. Socket
+  socket = io();
+
+  socket.on('connect', async () => {
+    miId = socket.id;
+    log('🔌 Conectado. Mi ID: ' + miId, 'ok');
+
+    document.getElementById('cargaTexto').textContent = 'Activando cámara...';
+
+    // 3. Cámara
+    const camOK = await iniciarCamara();
+    if (!camOK) {
+      document.getElementById('carga').classList.remove('visible');
+      return;
+    }
+
+    // 4. Unirse a la sala
+    socket.emit('unirse', { sala: miSala, nombre: miNombre });
+
+    // 5. Loop
+    loopFrame();
+
+    document.getElementById('carga').classList.remove('visible');
+    document.getElementById('estadoConexion').textContent = '✅ Listo - Haz gestos con la mano';
+    document.getElementById('estadoConexion').className = 'conectado';
+
+    log('✅ Todo listo', 'ok');
+  });
+
+  // Eventos
+  socket.on('lista-usuarios', (usuarios) => {
+    log(`👥 ${usuarios.length} en la sala`);
+    usuarios.forEach(u => {
+      if (u.id !== miId) {
+        crearVideoCard(u.id, u.nombre, false);
+        solicitarVideo(u.id);
+      }
+    });
+    document.getElementById('contador').textContent = usuarios.length + 1;
+  });
+
+  socket.on('nuevo-usuario', (user) => {
+    log(`➕ ${user.nombre} entró`, 'ok');
+    crearVideoCard(user.id, user.nombre, false);
+  });
+
+  socket.on('usuario-salio', (user) => {
+    log(`➖ ${user.nombre} salió`, 'warn');
+    const card = document.getElementById('card-' + user.id);
+    if (card) card.remove();
+  });
+
+  socket.on('actualizar-contador', (n) => {
+    document.getElementById('contador').textContent = n;
+  });
+
+  socket.on('gesto-recibido', ({ id, nombre, gesto }) => {
+    log(`🎯 ${nombre}: gesto ${gesto}`, 'ok');
+    const badge = document.getElementById('badge-' + id);
+    if (badge && GESTOS[gesto]) {
+      const g = GESTOS[gesto];
+      badge.textContent = `${g.emoji} ${g.nombre}`;
+      badge.classList.add('visible');
+
+      const card = document.getElementById('card-' + id);
+      if (card) card.classList.add('activo');
+
+      setTimeout(() => {
+        badge.classList.remove('visible');
+        if (card) card.classList.remove('activo');
+      }, 3000);
+    }
+  });
+
+  socket.on('error-sala', (msg) => {
+    alert('⚠️ ' + msg);
+    log('❌ ' + msg, 'err');
+    document.getElementById('carga').classList.remove('visible');
+    document.getElementById('entrada').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    btn.disabled = false;
+    btn.textContent = '🚀 Entrar a la sala';
+  });
+
+  socket.on('disconnect', () => {
+    log('❌ Desconectado del servidor', 'err');
+    document.getElementById('estadoConexion').textContent = '❌ Desconectado del servidor';
+    document.getElementById('estadoConexion').className = 'error';
+  });
+}
+
+// Función placeholder (sin WebRTC de video entre usuarios por ahora)
+function solicitarVideo(id) {
+  // Se puede agregar WebRTC después
+}
+
+// ==========================================
+// BOTONES
+// ==========================================
+document.getElementById('btnEntrar').onclick = entrar;
+
+document.getElementById('nombreInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') document.getElementById('salaInput').focus();
+});
+
+document.getElementById('salaInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') entrar();
+});
+
+document.getElementById('btnSalir').onclick = () => {
+  if (confirm('¿Salir de la sala?')) location.reload();
+};
+</script>
+</body>
+</html>

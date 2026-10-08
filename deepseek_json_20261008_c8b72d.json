@@ -1,0 +1,16 @@
+{
+  "name": "gestos-equipo",
+  "version": "1.0.0",
+  "description": "App de gestos con la mano para equipos de 5 personas",
+  "main": "servidor.js",
+  "scripts": {
+    "start": "node servidor.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
